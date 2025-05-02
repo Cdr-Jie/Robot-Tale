@@ -15,7 +15,9 @@ int animation_state = 0;
 //float size = 0.01;
 
 void initGL() {
-	glClearColor(255.0, 255.0, 255.0, 0.0);
+	glClearColor(255.0, 255.0, 255.0, 0.0);//white background
+    //glClearColor(0, 0, 0, 0.0);//black background
+
     glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluOrtho2D(0, SCREEN_WIDTH, 0, SCREEN_HEIGHT);
@@ -236,22 +238,26 @@ void drawBot9(float x = 500.0f, float y = 500.0f, float size = 1) {
     }
 }
 
-void drawBot9SideView(float x = 500.0f, float y = 600.0f, float size = 0.8) {
+void drawBot9SideView(float x = 400.0f, float y = 500.0f, float size = 0.5) {
     float unit = 25;
     float scale = size * unit; //25
     float height = 8 * size * 25; //200
     float width = 11 * size * 25; //275
+    /*neck*/
+    glColor3d(0, 0, 0);
+    drawRoundedRect(x - 4.5 * scale, y - scale * 5, width / 2, height / 6, unit / 2.5f);
+    /*head*/
+    glColor3d(255, 255, 255);
+    drawRoundedRect(x - 4.5 * scale, y, 12 * scale, 9 * scale, 25.0f);
+    glColor3d(0, 0, 0);
+    drawRoundedRectOutline(x - 4.5 * scale, y, 12 * scale, 9 * scale, 25.0f);
+    /*body*/
+    glColor3d(255, 255, 255);
+    drawRoundedRect(x - 7.5 * scale, y - 13 * scale, 15 * scale, 15 * scale, unit / 2.5f);
+    glColor3d(0, 0, 0);
+    drawRoundedRectOutline(x - 7.5 * scale, y - 13 * scale, 15 * scale, 15 * scale, unit / 2.5f);
 
-    /*shearing to side*/
-    float shear = -0.1f;
-    GLfloat m[16] = {
-    1.0f, shear, 0.0f, 0.0f,
-    shear, 1.0f, 0.0f, 0.0f,
-    0.0f, 0.0f, 1.0f, 0.0f,
-    0.0f, 0.0f, 0.0f, 1.0f
-    };
-    glPushMatrix();
-    glMultMatrixf(m);
+   
 
 
     /*head*/
@@ -281,8 +287,6 @@ void drawBot9SideView(float x = 500.0f, float y = 600.0f, float size = 0.8) {
 
     /*wheels*/
     
-    
-    glPopMatrix();
 }
 void display() {
 	glClear(GL_COLOR_BUFFER_BIT);

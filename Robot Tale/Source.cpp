@@ -11,11 +11,13 @@
 #define M_PI 3.1415926f
 #define FPS 120
 
+float arm_angle = 0; //0 is facing bottom, all rotates counter clockwise
+float head_angle = 0; // 0 is facing right
+
 int animation_state = 0;
-//float size = 0.01;
 
 void initGL() {
-	glClearColor(255.0, 255.0, 255.0, 0.0);//white background
+	glClearColor(1.0, 1.0, 1.0, 0.0);//white background
     //glClearColor(0, 0, 0, 0.0);//black background
 
     glMatrixMode(GL_PROJECTION);
@@ -47,7 +49,7 @@ void ellipse(float cx, float cy, float rx, float ry, int num_segments)
     glEnd();
 }
 
-void semi_ellipse(float cx, float cy, float rx, float ry, int num_segments)
+void semi_ellipse(float cx, float cy, float rx, float ry, int num_segments, float width = 10)
 {
     float theta = M_PI / float(num_segments);
     float c = cosf(theta);//precalculate the sine and cosine
@@ -56,7 +58,7 @@ void semi_ellipse(float cx, float cy, float rx, float ry, int num_segments)
 
     float x = -1;//we start at angle = 0 
     float y = 0;
-    glLineWidth(10.0);
+    glLineWidth(width);
     glBegin(GL_LINE_STRIP);
     for (int ii = 0; ii <= num_segments; ii++)
     {
@@ -189,7 +191,7 @@ void drawBot9(float x = 500.0f, float y = 500.0f, float size = 1) {
     glColor3d(0, 0, 0);
     drawRoundedRect(x, y - scale * 5, width / 2, height / 6, unit / 2.5f);
     /*head*/
-    glColor3d(255, 255, 255);
+    glColor3d(1,1,1);
     drawRoundedRect(x, y, 12 * scale, 9 * scale, 25.0f);
     glColor3d(0, 0, 0);
     drawRoundedRectOutline(x, y, 12 * scale, 9 * scale, 25.0f);
@@ -197,15 +199,15 @@ void drawBot9(float x = 500.0f, float y = 500.0f, float size = 1) {
     glColor3d(0, 0, 0);
     drawRoundedRect(x, y, width, height, 25.0f);
     /*eyes*/
-    glColor3d(255, 255, 255);
+    glColor3d(1, 1, 1);
     ellipse(x + 3 * scale, y, scale, 7.0f/5.0f * scale, 2 * scale);
     ellipse(x - 3 * scale, y, scale, 7.0f/5.0f * scale, 2 * scale);
     
     /*mouth*/
-    glColor3d(255, 255, 255);
+    glColor3d(1, 1, 1);
     semi_ellipse(x, y - 2 * scale, 7.0f / 5.0f * scale, scale, 30);
     /*body*/
-    glColor3d(255, 255, 255);
+    glColor3d(1, 1, 1);
     drawRoundedRect(x, y - 13 * scale, 15 * scale, 15 * scale, unit / 2.5f);
     glColor3d(0, 0, 0);
     drawRoundedRectOutline(x, y - 13 * scale, 15 * scale, 15 * scale, unit / 2.5f);
@@ -240,19 +242,33 @@ void drawBot9(float x = 500.0f, float y = 500.0f, float size = 1) {
 
 void drawBot9SideView(float x = 400.0f, float y = 500.0f, float size = 0.5) {
     float unit = 25;
-    float scale = size * unit; //25
-    float height = 8 * size * 25; //200
-    float width = 11 * size * 25; //275
+    float scale = size * unit;
     /*neck*/
     glColor3d(0, 0, 0);
-    drawRoundedRect(x - 4.5 * scale, y - scale * 5, width / 2, height / 6, unit / 2.5f);
+    drawRoundedRect(x - 4.5 * scale, y - scale * 5, 5.5 * scale, 8 * scale, unit / 2.5f);
     /*head*/
-    glColor3d(255, 255, 255);
+    glColor3d(1, 1, 1);
     drawRoundedRect(x - 4.5 * scale, y, 12 * scale, 9 * scale, 25.0f);
     glColor3d(0, 0, 0);
     drawRoundedRectOutline(x - 4.5 * scale, y, 12 * scale, 9 * scale, 25.0f);
+    
+    /*wheel behind body*/
+    glColor3d(0.2f, 0.2f, 0.2f);
+    drawRoundedRect(x + 3 * scale, y - 20 * scale, 15 * scale, 5 * scale, unit);
+    glColor3d(0, 0, 0);
+    drawRoundedRectOutline(x + 3 * scale, y - 20 * scale, 15 * scale, 5 * scale, unit);
+    glColor3d(0.3f, 0.3f, 0.3f);
+    drawRoundedRect(x + scale, y - 20 * scale, 12 * scale, 5 * scale, unit);
+    glColor3d(0, 0, 0);
+    drawRoundedRectOutline(x + scale, y - 20 * scale, 12 * scale, 5 * scale, unit);
+    glColor3d(0.5f, 0.5f, 0.5f);
+    ellipse(x - 3  * scale, y - 20 * scale, 1.5 * scale, 1.5 * scale, 50);
+    ellipse(x + 1 * scale, y - 20 * scale, 1.5 * scale, 1.5 * scale, 50);
+    ellipse(x + 5 * scale, y - 20 * scale, 1.5 * scale, 1.5 * scale, 50);
+
+
     /*body*/
-    glColor3d(255, 255, 255);
+    glColor3d(1, 1, 1);
     drawRoundedRect(x - 7.5 * scale, y - 13 * scale, 15 * scale, 15 * scale, unit / 2.5f);
     glColor3d(0, 0, 0);
     drawRoundedRectOutline(x - 7.5 * scale, y - 13 * scale, 15 * scale, 15 * scale, unit / 2.5f);
@@ -261,37 +277,81 @@ void drawBot9SideView(float x = 400.0f, float y = 500.0f, float size = 0.5) {
 
 
     /*head*/
-    glColor3d(255, 255, 255);
+    glColor3d(1, 1, 1);
     drawRoundedRect(x, y, 12 * scale, 9 * scale, 25.0f);
     glColor3d(0, 0, 0);
     drawRoundedRectOutline(x, y, 12 * scale, 9 * scale, 25.0f);
     /*face*/
     glColor3d(0, 0, 0);
-    drawRoundedRect(x, y, width, height, 25.0f);
+    drawRoundedRect(x, y, 11 * scale, 8 * scale, 25.0f);
     /*eyes*/
-    glColor3d(255, 255, 255);
+    glColor3d(1, 1, 1);
     ellipse(x + 3 * scale, y, scale, 7.0f / 5.0f * scale, 2 * scale);
     ellipse(x - 3 * scale, y, scale, 7.0f / 5.0f * scale, 2 * scale);
 
     /*mouth*/
-    glColor3d(255, 255, 255);
+    glColor3d(1, 1, 1);
     semi_ellipse(x, y - 2 * scale, 7.0f / 5.0f * scale, scale, 30);
     
     /*body*/
-    glColor3d(255, 255, 255);
+    glColor3d(1, 1, 1);
     drawRoundedRect(x, y - 13 * scale, 15 * scale, 15 * scale, unit / 2.5f);
     glColor3d(0, 0, 0);
     drawRoundedRectOutline(x, y - 13 * scale, 15 * scale, 15 * scale, unit / 2.5f);
 
-    /*arms*/
-
-    /*wheels*/
     
+    /*wheels*/
+    glColor3d(0.3f, 0.3f, 0.3f);
+    drawRoundedRect(x - 12 * scale, y - 20 * scale, 15 * scale, 5 * scale, unit);
+    glColor3d(0, 0, 0);
+    drawRoundedRectOutline(x - 12 * scale, y - 20 * scale, 15 * scale, 5 * scale, unit);
+    glColor3d(0.5f, 0.5f, 0.5f); // Medium grey (RGB: 128, 128, 128)
+    drawRoundedRect(x - 14 * scale, y - 20 * scale, 12 * scale, 5 * scale, unit);
+    glColor3d(0, 0, 0);
+    drawRoundedRectOutline(x - 14 * scale, y - 20 * scale, 12 * scale, 5 * scale, unit);
+    glColor3d(0.9f, 0.9f, 0.9f);
+    ellipse(x - 10 * scale, y - 20 * scale, 1.5 * scale, 1.5 * scale, unit);
+    ellipse(x - 14 * scale, y - 20 * scale, 1.5 * scale, 1.5 * scale, unit);
+    ellipse(x - 18 * scale, y - 20 * scale, 1.5 * scale, 1.5 * scale, unit);
+    /*arms*/
+    float arms_x = x - 11 * scale;
+    float arms_y = y - 10 * scale;
+    glPushMatrix();
+    glTranslatef(arms_x, arms_y, 0);
+    glRotatef(90, 0, 0, 1); //rotates arm
+    glRotatef(arm_angle, 0, 0, 1); //rotates arm
+    glTranslatef(-arms_x, -arms_y, 0);
+
+    glColor3d(1, 1, 1);
+    drawRoundedRect(x - 5 * scale, y - 10 * scale, 13 * scale, 2 * scale, unit / 2.5f);
+    glColor3d(0, 0, 0);
+    drawRoundedRectOutline(x - 5 * scale, y - 10 * scale, 13 * scale, 2 * scale, unit / 2.5f);
+    glColor3d(0, 0, 0);
+    ellipse(x - 11 * scale, y - 10 * scale, 2 * scale, 2 * scale, unit); //arm hole
+    glColor3d(1, 1, 1);
+    ellipse(x - 11 * scale, y - 10 * scale, 1.5 * scale, 1.5 * scale, unit); //arm hole
+
+    glColor3d(0, 0, 0);
+    glPushMatrix();
+    float clawposx = x + 4 * scale;
+    float clawposy = y - 10 * scale;
+    glTranslatef(clawposx, clawposy, 0);
+
+    glRotatef(270, 0, 0, 1);
+    glTranslatef(-clawposx, -clawposy, 0);
+    semi_ellipse(clawposx, clawposy, 2 * scale, 2 * scale, 10, 20.0f);
+
+    glPopMatrix();
+    glPopMatrix();
 }
+
+
 void display() {
 	glClear(GL_COLOR_BUFFER_BIT);
-	//drawn items here
+	//drawn items here   
+
     drawBot9SideView();
+
     //glPushMatrix();
     //float shear = -0.1f;
     //GLfloat m[16] = {
@@ -310,12 +370,19 @@ void display() {
 }
 
 void anim (int value) {
-	if (animation_state <= 100) {
-        animation_state++;
-        std::cout << animation_state << std::endl;
+	if (arm_angle >= -180 && arm_angle <= 0) {
+        arm_angle--;
 	}
-	else if (animation_state == 1) {
+	else if (arm_angle < -180){
+        arm_angle = abs(arm_angle);
+        arm_angle++;
 	}
+    else if (arm_angle < 360) {
+        arm_angle++;
+    }
+    else {
+        arm_angle = 0;
+    }
     //size += 0.01;
 
 	glutPostRedisplay(); // Tell GLUT to redraw

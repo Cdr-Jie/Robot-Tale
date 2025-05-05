@@ -5,6 +5,7 @@
 #include <gl\GLU.h>
 #include <gl\glut.h>
 #include <iostream>
+#include 'functions.h'
 
 #define SCREEN_WIDTH 1280
 #define SCREEN_HEIGHT 900
@@ -43,10 +44,24 @@ void initGL() {
 }
 
 /*backgrounds*/
+/*Scene 0*/
+void drawScene0() {
+    glColor3f(0.2, 0.2, 0.6);
+    drawRoundedRect(500, 500, 400, 250, 5);
+
+    glColor3f(0.8f, 0.8f, 0.8f);
+    glBegin(GL_QUADS);
+    glVertex2f(0.0f, 0.0f); // Bottom-left corner
+    glVertex2f(SCREEN_WIDTH, 0.0f); // Bottom-right corner
+    glVertex2f(SCREEN_WIDTH, 300.0f); // Top-right corner
+    glVertex2f(0.0f, 300.0f); // Top-left corner
+    glEnd();
+}
+
 /*Scene 1*/
 void drawScene1() {
     // Draw the back wall (dark gray)
-    glColor3f(0.1f, 0.1f, 0.1f);
+    glColor3f(0.3f, 0.3f, 0.3f);
     glBegin(GL_QUADS);
     glVertex2f(300.0f, 400.0f); // Bottom-left corner
     glVertex2f(1000.0f, 400.0f); // Bottom-right corner
@@ -55,7 +70,7 @@ void drawScene1() {
     glEnd();
 
     // Draw the floor (medium gray)
-    glColor3f(0.2f, 0.2f, 0.2f);
+    glColor3f(0.5f, 0.5f, 0.5f);
     glBegin(GL_QUADS);
     glVertex2f(0.0f, 0.0f); // Bottom-left corner
     glVertex2f(SCREEN_WIDTH, 0.0f); // Bottom-right corner
@@ -657,19 +672,21 @@ void drawSeed(float x, float y, float scale) {
 
 void display() {
 	glClear(GL_COLOR_BUFFER_BIT);
-	//drawn items here   
+	//drawn items here
     if (scene == 0) {
+        drawScene0();
+    }
+    else if (scene == 1) {
         drawScene1();
         glPushMatrix();
         glTranslatef(400, 300, 0);
-        //glScaled(-1, 1, 1.0);
         glTranslatef(-400, -300, 0);
             glTranslatef(bot9_x, 0, 0);
             drawBot9SideView(400, 500, 0.3, 1);
         glPopMatrix();
         drawSeed(600, 300, 0.25f);
     }
-    else if (scene == 1) {
+    else if (scene == 2) {
         drawScene2();
         drawBot9(500,500,1,2);
         

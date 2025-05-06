@@ -5,7 +5,7 @@
 #include <gl\GLU.h>
 #include <gl\glut.h>
 #include <iostream>
-#include 'functions.h'
+#include "functions.h"
 
 #define SCREEN_WIDTH 1280
 #define SCREEN_HEIGHT 900
@@ -15,6 +15,9 @@
 float bot9_x = 0;
 float arm_angle = 0; //0 is facing bottom, all rotates counter clockwise
 float head_angle = 0; // 0 is facing right
+int bot9_face = 1;
+float scene0_leftpan = 0;
+float cur_leftpan = 0;
 
 float wheel_rotation = 0;
 float arm_extension = 0;
@@ -24,10 +27,15 @@ float scanbar = 0;
 
 float seed_x = 0;
 float seed_y = 0;
+float trash_x = 0;
+float trash_y = 0;
 
 bool bar_flip = false;//for scanbar
 bool head_flip = false; // for head nod
 bool draw_hands = false; //showing/hiding hands
+bool flag = true; //flag for scene 0
+bool rock_behind_bot = false;
+bool draw_rock = true;
 
 int pause = 0; // for how long the head stops moving
 
@@ -43,18 +51,230 @@ void initGL() {
 	gluOrtho2D(0, SCREEN_WIDTH, 0, SCREEN_HEIGHT);
 }
 
-/*backgrounds*/
+void ellipse(float cx, float cy, float rx, float ry, int num_segments)
+{
+    float theta = 2 * M_PI / float(num_segments);
+    float c = cosf(theta);//precalculate the sine and cosine
+    float s = sinf(theta);
+    float t;
+
+    float x = 1;//we start at angle = 0 
+    float y = 0;
+
+    glBegin(GL_POLYGON);
+    for (int ii = 0; ii <= num_segments; ii++)
+    {
+        //apply radius and offset
+        glVertex2f(x * rx + cx, y * ry + cy);//output vertex 
+
+        //apply the rotation matrix
+        t = x;
+        x = c * x - s * y;
+        y = s * t + c * y;
+    }
+    glEnd();
+}
+
+void semi_ellipse(float cx, float cy, float rx, float ry, int num_segments, float width = 10.0f)
+{
+    float theta = M_PI / float(num_segments);
+    float c = cosf(theta);//precalculate the sine and cosine
+    float s = sinf(theta);
+    float t;
+
+    float x = -1;//we start at angle = 0 
+    float y = 0;
+    glLineWidth(width);
+    glBegin(GL_LINE_STRIP);
+    for (int ii = 0; ii <= num_segments; ii++)
+    {
+        //apply radius and offset
+        glVertex2f(x * rx + cx, y * ry + cy);//output vertex 
+
+        //apply the rotation matrix
+        t = x;
+        x = c * x - s * y;
+        y = s * t + c * y;
+    }
+    glEnd();
+}
+
+
+void drawRoundedRect(float x, float y, float width, float height, float radius, int segments = 16) {
+    float halfW = width / 2.0f;
+    float halfH = height / 2.0f;
+
+    float left = x - halfW + radius;
+    float right = x + halfW - radius;
+    float top = y + halfH - radius;
+    float bottom = y - halfH + radius;
+
+    glBegin(GL_POLYGON);
+
+    // Top edge
+    glVertex2f(left, y + halfH);
+    glVertex2f(right, y + halfH);
+
+    // Top-right corner
+    for (int i = 0; i <= segments; ++i) {
+        float theta = i * M_PI / 2.0f / segments;
+        glVertex2f(right + sin(theta) * radius, top + cos(theta) * radius);
+    }
+
+    // Right edge
+    glVertex2f(x + halfW, bottom);
+    glVertex2f(x + halfW, top);
+
+    // Bottom-right corner
+    for (int i = segments; i >= 0; --i) {
+        float theta = i * M_PI / 2.0f / segments + 3 * M_PI / 2.0f;
+        glVertex2f(right + cos(theta) * radius, bottom + sin(theta) * radius);
+    }
+
+    // Bottom edge
+    glVertex2f(right, y - halfH);
+    glVertex2f(left, y - halfH);
+
+    // Bottom-left corner
+    for (int i = 0; i <= segments; ++i) {
+        float theta = i * M_PI / 2 / segments + M_PI;
+        glVertex2f(left + sin(theta) * radius, bottom + cos(theta) * radius);
+    }
+
+    // Left edge
+    glVertex2f(x - halfW, top);
+    glVertex2f(x - halfW, bottom);
+
+    // Top-left corner
+    for (int i = segments; i >= 0; --i) {
+        float theta = i * M_PI / 2 / segments + M_PI / 2;
+        glVertex2f(left + cos(theta) * radius, top + sin(theta) * radius);
+    }
+
+    glEnd();
+}
+
+void drawRoundedRectOutline(float x, float y, float width, float height, float radius, int segments = 16) {
+    float halfW = width / 2.0f;
+    float halfH = height / 2.0f;
+
+    float left = x - halfW + radius;
+    float right = x + halfW - radius;
+    float top = y + halfH - radius;
+    float bottom = y - halfH + radius;
+    glLineWidth(5.0);
+    glBegin(GL_LINE_STRIP);
+
+    // Top edge
+    glVertex2f(left, y + halfH);
+    glVertex2f(right, y + halfH);
+
+    // Top-right corner
+    for (int i = 0; i <= segments; ++i) {
+        float theta = i * M_PI / 2.0f / segments;
+        glVertex2f(right + sin(theta) * radius, top + cos(theta) * radius);
+    }
+
+    // Right edge
+    glVertex2f(x + halfW, bottom);
+    glVertex2f(x + halfW, top);
+
+    // Bottom-right corner
+    for (int i = segments; i >= 0; --i) {
+        float theta = i * M_PI / 2.0f / segments + 3 * M_PI / 2.0f;
+        glVertex2f(right + cos(theta) * radius, bottom + sin(theta) * radius);
+    }
+
+    // Bottom edge
+    glVertex2f(right, y - halfH);
+    glVertex2f(left, y - halfH);
+
+    // Bottom-left corner
+    for (int i = 0; i <= segments; ++i) {
+        float theta = i * M_PI / 2 / segments + M_PI;
+        glVertex2f(left + sin(theta) * radius, bottom + cos(theta) * radius);
+    }
+
+    // Left edge
+    glVertex2f(x - halfW, top);
+    glVertex2f(x - halfW, bottom);
+
+    // Top-left corner
+    for (int i = segments; i >= 0; --i) {
+        float theta = i * M_PI / 2 / segments + M_PI / 2;
+        glVertex2f(left + cos(theta) * radius, top + sin(theta) * radius);
+    }
+
+    glEnd();
+}
+
+/*Backgrounds*/
 /*Scene 0*/
 void drawScene0() {
-    glColor3f(0.2, 0.2, 0.6);
-    drawRoundedRect(500, 500, 400, 250, 5);
+    glLineWidth(10.0f);
 
+    //wall panel
+    glColor3f(0.95f, 0.95f, 0.85f);
+    glBegin(GL_QUADS);
+    glVertex2f(0.0f, 300.0f); // Bottom-left corner
+    glVertex2f(2 * SCREEN_WIDTH, 300.0f); // Bottom-right corner
+    glVertex2f(2 * SCREEN_WIDTH, SCREEN_HEIGHT); // Top-right corner
+    glVertex2f(0.0f, SCREEN_HEIGHT); // Top-left corner
+    glEnd();
+    //windows
+    glColor3f(0.1, 0.1, 0.2);
+    float windows_x = 100;
+    for (int i = 0; i < 4; i++) {
+        drawRoundedRect(windows_x, 800, 350, 600, 150);
+        windows_x += 500;
+    }
+    
+    //floor
     glColor3f(0.8f, 0.8f, 0.8f);
     glBegin(GL_QUADS);
     glVertex2f(0.0f, 0.0f); // Bottom-left corner
-    glVertex2f(SCREEN_WIDTH, 0.0f); // Bottom-right corner
-    glVertex2f(SCREEN_WIDTH, 300.0f); // Top-right corner
+    glVertex2f(2 * SCREEN_WIDTH, 0.0f); // Bottom-right corner
+    glVertex2f(2 * SCREEN_WIDTH, 300.0f); // Top-right corner
     glVertex2f(0.0f, 300.0f); // Top-left corner
+    glEnd();
+
+    //door and wall into next scene
+    glPushMatrix();
+    glTranslatef(SCREEN_WIDTH + 600, 400, 0);
+    glRotated(-20, 0, 0, 1);
+    glTranslatef(-SCREEN_WIDTH - 600, -400, 0);
+    glColor3f(0.95f, 0.95f, 0.85f);
+    glBegin(GL_QUADS);
+        glVertex2f(SCREEN_WIDTH + 600, 300.0f); // Bottom-left corner
+        glVertex2f(2 * SCREEN_WIDTH, 300.0f); // Bottom-right corner
+        glVertex2f(2 * SCREEN_WIDTH, SCREEN_HEIGHT); // Top-right corner
+        glVertex2f(SCREEN_WIDTH + 600, SCREEN_HEIGHT); // Top-left corner
+    glEnd();
+    glPopMatrix();
+    glPushMatrix();
+    glTranslatef(SCREEN_WIDTH + 1000, 400, 0);
+    glRotated(-10, 0, 0, 1);
+    glTranslatef(-SCREEN_WIDTH - 1000, -400, 0);
+    glColor3d(0, 0, 0);
+        ellipse(SCREEN_WIDTH + 1000, 200, 250, 600, 50);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(SCREEN_WIDTH + 600, 400, 0);
+    glRotated(-20, 0, 0, 1);
+    glTranslatef(-SCREEN_WIDTH - 600, -400, 0);
+    glColor3f(0.8f, 0.8f, 0.8f);
+    glBegin(GL_QUADS);
+    glVertex2f(SCREEN_WIDTH + 600, 0.0f); // Bottom-left corner
+    glVertex2f(SCREEN_WIDTH + 1200, 0.0f); // Bottom-right corner
+    glVertex2f(SCREEN_WIDTH + 1200, 300.0f); // Top-right corner
+    glVertex2f(SCREEN_WIDTH + 600, 300.0f); // Top-left corner
+    glEnd();
+    glPopMatrix();
+    glColor3f(0.9f, 0.9f, 0.85f);
+    glBegin(GL_LINE_LOOP);
+        glVertex2f(SCREEN_WIDTH + 570, SCREEN_HEIGHT); 
+        glVertex2f(SCREEN_WIDTH + 570, 300);
     glEnd();
 }
 
@@ -262,163 +482,7 @@ void drawScene2() {
 
 /*Scene 2 end*/
 
-void ellipse(float cx, float cy, float rx, float ry, int num_segments)
-{
-    float theta = 2 * M_PI / float(num_segments);
-    float c = cosf(theta);//precalculate the sine and cosine
-    float s = sinf(theta);
-    float t;
-
-    float x = 1;//we start at angle = 0 
-    float y = 0;
-
-    glBegin(GL_POLYGON);
-    for (int ii = 0; ii <= num_segments; ii++)
-    {
-        //apply radius and offset
-        glVertex2f(x * rx + cx, y * ry + cy);//output vertex 
-
-        //apply the rotation matrix
-        t = x;
-        x = c * x - s * y;
-        y = s * t + c * y;
-    }
-    glEnd();
-}
-
-void semi_ellipse(float cx, float cy, float rx, float ry, int num_segments, float width = 10.0f)
-{
-    float theta = M_PI / float(num_segments);
-    float c = cosf(theta);//precalculate the sine and cosine
-    float s = sinf(theta);
-    float t;
-
-    float x = -1;//we start at angle = 0 
-    float y = 0;
-    glLineWidth(width);
-    glBegin(GL_LINE_STRIP);
-    for (int ii = 0; ii <= num_segments; ii++)
-    {
-        //apply radius and offset
-        glVertex2f(x * rx + cx, y * ry + cy);//output vertex 
-
-        //apply the rotation matrix
-        t = x;
-        x = c * x - s * y;
-        y = s * t + c * y;
-    }
-    glEnd();
-}
-
-
-void drawRoundedRect(float x, float y, float width, float height, float radius, int segments = 16) {
-    float halfW = width / 2.0f;
-    float halfH = height / 2.0f;
-
-    float left = x - halfW + radius;
-    float right = x + halfW - radius;
-    float top = y + halfH - radius;
-    float bottom = y - halfH + radius;
-
-    glBegin(GL_POLYGON);
-
-    // Top edge
-    glVertex2f(left, y + halfH);
-    glVertex2f(right, y + halfH);
-
-    // Top-right corner
-    for (int i = 0; i <= segments; ++i) {
-        float theta = i * M_PI / 2.0f / segments;
-        glVertex2f(right + sin(theta) * radius, top + cos(theta) * radius);
-    }
-
-    // Right edge
-    glVertex2f(x + halfW, bottom);
-    glVertex2f(x + halfW, top);
-
-    // Bottom-right corner
-    for (int i = segments; i >= 0; --i) {
-        float theta = i * M_PI / 2.0f / segments + 3 * M_PI / 2.0f;
-        glVertex2f(right + cos(theta) * radius, bottom + sin(theta) * radius);
-    }
-
-    // Bottom edge
-    glVertex2f(right, y - halfH);
-    glVertex2f(left, y - halfH);
-
-    // Bottom-left corner
-    for (int i = 0; i <= segments; ++i) {
-        float theta = i * M_PI / 2 / segments + M_PI;
-        glVertex2f(left + sin(theta) * radius, bottom + cos(theta) * radius);
-    }
-
-    // Left edge
-    glVertex2f(x - halfW, top);
-    glVertex2f(x - halfW, bottom);
-
-    // Top-left corner
-    for (int i = segments; i >= 0; --i) {
-        float theta = i * M_PI / 2 / segments + M_PI / 2;
-        glVertex2f(left + cos(theta) * radius, top + sin(theta) * radius);
-    }
-
-    glEnd();
-}
-
-void drawRoundedRectOutline(float x, float y, float width, float height, float radius, int segments = 16) {
-    float halfW = width / 2.0f;
-    float halfH = height / 2.0f;
-
-    float left = x - halfW + radius;
-    float right = x + halfW - radius;
-    float top = y + halfH - radius;
-    float bottom = y - halfH + radius;
-    glLineWidth(5.0);
-    glBegin(GL_LINE_STRIP);
-
-    // Top edge
-    glVertex2f(left, y + halfH);
-    glVertex2f(right, y + halfH);
-
-    // Top-right corner
-    for (int i = 0; i <= segments; ++i) {
-        float theta = i * M_PI / 2.0f / segments;
-        glVertex2f(right + sin(theta) * radius, top + cos(theta) * radius);
-    }
-
-    // Right edge
-    glVertex2f(x + halfW, bottom);
-    glVertex2f(x + halfW, top);
-
-    // Bottom-right corner
-    for (int i = segments; i >= 0; --i) {
-        float theta = i * M_PI / 2.0f / segments + 3 * M_PI / 2.0f;
-        glVertex2f(right + cos(theta) * radius, bottom + sin(theta) * radius);
-    }
-
-    // Bottom edge
-    glVertex2f(right, y - halfH);
-    glVertex2f(left, y - halfH);
-
-    // Bottom-left corner
-    for (int i = 0; i <= segments; ++i) {
-        float theta = i * M_PI / 2 / segments + M_PI;
-        glVertex2f(left + sin(theta) * radius, bottom + cos(theta) * radius);
-    }
-
-    // Left edge
-    glVertex2f(x - halfW, top);
-    glVertex2f(x - halfW, bottom);
-
-    // Top-left corner
-    for (int i = segments; i >= 0; --i) {
-        float theta = i * M_PI / 2 / segments + M_PI / 2;
-        glVertex2f(left + cos(theta) * radius, top + sin(theta) * radius);
-    }
-
-    glEnd();
-}
-
+/*Characters*/
 void drawBot9(float x = 500.0f, float y = 500.0f, float size = 1, int face = 1) {
     float unit = 25;
     float scale = size * unit; //25
@@ -487,18 +551,27 @@ void drawBot9SideView(float x = 400.0f, float y = 500.0f, float size = 0.5, int 
     
     /*wheel behind body*/
     glColor3d(0.2f, 0.2f, 0.2f);
-    drawRoundedRect(x + 3 * scale, y - 20 * scale, 15 * scale, 5 * scale, scale);
+    drawRoundedRect(x + 3 * scale, y - 20 * scale, 15 * scale, 5 * scale, 2 * scale);
     glColor3d(0, 0, 0);
-    drawRoundedRectOutline(x + 3 * scale, y - 20 * scale, 15 * scale, 5 * scale, scale);
+    drawRoundedRectOutline(x + 3 * scale, y - 20 * scale, 15 * scale, 5 * scale, 2 * scale);
     glColor3d(0.3f, 0.3f, 0.3f);
-    drawRoundedRect(x + scale, y - 20 * scale, 12 * scale, 5 * scale, scale);
+    drawRoundedRect(x + scale, y - 20 * scale, 12 * scale, 5 * scale, 2 * scale);
     glColor3d(0, 0, 0);
-    drawRoundedRectOutline(x + scale, y - 20 * scale, 12 * scale, 5 * scale, scale);
+    drawRoundedRectOutline(x + scale, y - 20 * scale, 12 * scale, 5 * scale, 2 * scale);
     glColor3d(0.5f, 0.5f, 0.5f);
     ellipse(x - 3  * scale, y - 20 * scale, 1.5 * scale, 1.5 * scale, 50);
     ellipse(x + 1 * scale, y - 20 * scale, 1.5 * scale, 1.5 * scale, 50);
     ellipse(x + 5 * scale, y - 20 * scale, 1.5 * scale, 1.5 * scale, 50);
 
+    /*Trashbin behind body*/
+    glColor3d(0.1,0.1,0.1);
+    drawRoundedRect(x - 8 * scale, y - 10 * scale, 15 * scale, 12 * scale, scale / 2.5f);
+    glColor3d(0, 0, 0);
+    drawRoundedRectOutline(x - 8 * scale, y - 10 * scale, 15 * scale, 12 * scale, scale / 2.5f);
+    glColor3d(0.1, 0.1, 0.1);
+    drawRoundedRect(x - 8 * scale, y - 10 * scale, 15 * scale, 12 * scale, scale / 2.5f);
+    glColor3d(0, 0, 0);
+    drawRoundedRectOutline(x - 8 * scale, y - 10 * scale, 15 * scale, 12 * scale, scale / 2.5f);
 
     /*body*/
     glColor3d(1, 1, 1);
@@ -650,8 +723,12 @@ void drawBot9SideView(float x = 400.0f, float y = 500.0f, float size = 0.5, int 
 }
 
 /*trash*/
-void drawTrash() {
-    
+void drawTrash(float x,float y, float size) {
+    float scale = 25.0f * size;
+    glColor3d(0, 0, 0);
+    ellipse(x, y, 9 * scale, 6 * scale, 50);
+    glColor3ub(136, 140, 141);
+    ellipse(x, y, 8 * scale, 5 * scale, 50);
 }
 
 void drawSeed(float x, float y, float scale) {
@@ -674,7 +751,35 @@ void display() {
 	glClear(GL_COLOR_BUFFER_BIT);
 	//drawn items here
     if (scene == 0) {
+        glPushMatrix();
+        glTranslated(scene0_leftpan, 0, 0);
         drawScene0();
+        glPopMatrix();
+        if (!rock_behind_bot) {
+            glPushMatrix();
+            glTranslatef(400, 300, 0);
+            glTranslatef(-400, -300, 0);
+            glTranslatef(bot9_x, 0, 0);
+            drawBot9SideView(300, 600, 0.7, bot9_face);
+            glPopMatrix();
+            glPushMatrix();
+            glTranslatef(trash_x, trash_y, 0);
+            drawTrash(650, 200, 0.25f);
+            glPopMatrix();
+        }
+        else {
+            glPushMatrix();
+            glTranslatef(trash_x, trash_y, 0);
+            if (draw_rock)
+                drawTrash(650, 200, 0.25f);
+            glPopMatrix();
+            glPushMatrix();
+            glTranslatef(400, 300, 0);
+            glTranslatef(-400, -300, 0);
+            glTranslatef(bot9_x, 0, 0);
+            drawBot9SideView(300, 600, 0.7, bot9_face);
+            glPopMatrix();
+        }
     }
     else if (scene == 1) {
         drawScene1();
@@ -699,6 +804,141 @@ void display() {
 void anim(int value) {
     glutPostRedisplay(); // Tell GLUT to redraw
     if (animation_state == 0) {
+        if (bot9_x < 100) {//bot9 moves across the corridor
+            if (wheel_rotation > -360)
+                wheel_rotation -= 10;
+            else
+                wheel_rotation = 0;
+            bot9_x += 2.0f;
+        }
+        else if (head_angle > -20 && pause <= 30) {//bot 9 looks at trash
+            head_angle--;
+            pause = 0;
+        }
+        else if (head_angle == -20 && pause <= 60) {//scans it
+            bot9_face = 2;
+            if (scanbar < 130 && !bar_flip) {
+                scanbar += 3;
+            }
+            else if (scanbar >= 130 && !bar_flip) {
+                bar_flip = true;
+            }
+            else if (scanbar > 0 && bar_flip) {
+                scanbar -= 3;
+            }
+            else {
+                bar_flip = false;
+            }
+            pause++;
+            arm_angle = -90;
+        }
+        else if (arm_extension < 2.0) {//arm reaches towards trash
+            draw_hands = true;
+            bot9_face = 1;
+
+            if (arm_angle > -120) {
+                arm_angle -= 2;
+            }
+            if (arm_extension < 2.0) {
+                arm_extension += 0.1;
+            }
+        }
+        else {
+            pause = 0;
+
+            animation_state = 1;
+        }
+    }
+
+    if (animation_state == 1) {
+        if (pause < 10) {// trash goes slightly in
+            pause++;
+            trash_x--;
+            trash_y++;
+        }
+        else if (flag) { // puts trash into bin
+            if (arm_angle < 10)
+                arm_angle += 5;
+            if (trash_y < 450)
+                trash_y += 30;
+            if (trash_x > -450)
+                trash_x -= 20;
+            if (arm_extension > 1.0f) {
+                arm_extension -= 0.1;
+            }
+            if (arm_angle >= 10 && trash_y >= 450 && arm_extension == 1.0f) {
+                flag = false;
+                std::cout << flag;
+            }
+        }
+        else if (arm_extension > 0.0f) {
+            arm_extension -= 0.1;
+        }
+        else {
+            draw_hands = false;
+            rock_behind_bot = true;
+            if (trash_y > 50)
+                trash_y -= 20;
+            if (head_angle != 0) {
+                head_angle++;
+            }
+            else if (pause < 30) {
+                pause++;
+            }
+            else {
+                pause = 0;
+                animation_state = 2;
+                arm_angle = -90;
+                draw_rock = false;
+                trash_x = 800;
+                trash_y = 0;
+            }
+        }
+
+    }
+
+    if (animation_state == 2) {
+        std::cout << scene0_leftpan;
+        if (scene0_leftpan >= -600)
+            draw_rock = true;
+        if (cur_leftpan >= -400 && scene0_leftpan > -1200) {
+            if (trash_x > 0) {
+                trash_x -= 40;
+            }
+            if (wheel_rotation > -360)
+                wheel_rotation -= 10;
+            else
+                wheel_rotation = 0;
+            if (cur_leftpan > -400) {
+                cur_leftpan -= 20;
+                scene0_leftpan -= 20;
+            }
+            else if (scene0_leftpan >= -800) {
+                animation_state = 0;
+                arm_angle = -90;
+                flag = true;
+                cur_leftpan = 0;
+            }
+            else{
+                pause = 0;
+                arm_angle = -90;
+                flag = true;
+                trash_x = 0;
+                trash_y = 0;
+            }
+        }
+        else if (bot9_x <= 900) {
+            bot9_x += 20;
+        }
+        else {
+            pause = 0;
+            bot9_x = 0;
+            animation_state = 3;
+            arm_angle = -90;
+        }
+    }
+
+    if (animation_state == 3) {
         if (bot9_x < 100) {
             if (wheel_rotation > -360)
                 wheel_rotation -= 10;
@@ -707,9 +947,9 @@ void anim(int value) {
             bot9_x += 1.0f;
         }
         else
-            animation_state = 1;
+            animation_state = 3;
     }
-    else if (animation_state == 1) {
+    else if (animation_state == 3) {
         if (head_angle > -30 && !head_flip) {
             head_angle--;
             arm_angle = -90;
@@ -726,11 +966,11 @@ void anim(int value) {
                 if (pause < 25)
                     pause++;
                 else
-                    animation_state = 2;
+                    animation_state = 4;
             }
         }
     }
-    else if (animation_state == 2) {
+    else if (animation_state == 4) {
         if (seed_x > -90) {
             pause = 0;
             if (arm_extension > 1.0)

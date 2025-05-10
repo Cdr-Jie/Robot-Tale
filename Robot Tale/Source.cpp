@@ -13,6 +13,8 @@
 #define FPS 120
 
 float bot9_x = 0;
+float bot9_y = 0;
+float bot9_angle = 0;
 float arm_angle = 0; //0 is facing bottom, all rotates counter clockwise
 float head_angle = 0; // 0 is facing right
 int bot9_face = 1;
@@ -37,10 +39,14 @@ bool flag = true; //flag for scene 0
 bool rock_behind_bot = false;
 bool draw_rock = true;
 
+int door_state = 0;//0 if closed, 1 if opened
 int pause = 0; // for how long the head stops moving
 
-int scene = 0;
-int animation_state = 0;
+//int scene = 0;
+//int animation_state = 0;
+/*skipping anims*/
+int scene = 4;
+int animation_state = 8;
 
 void initGL() {
 	glClearColor(1.0, 1.0, 1.0, 0.0);//white background
@@ -354,6 +360,18 @@ void drawScene1() {
 /* Scene 1 end */
 
 /* Scene 2 */
+void drawScene2() {
+    glColor3ub(30, 30, 30);
+    glBegin(GL_POLYGON);
+    glVertex2d(0.0f, 0.0f);
+    glVertex2d(0.0f, SCREEN_HEIGHT);
+    glVertex2d(SCREEN_WIDTH, SCREEN_HEIGHT);
+    glVertex2d(SCREEN_WIDTH, 0.0f);
+    glEnd();
+}
+/* Scene 2 end */
+
+/* Scene 3 */
 void rectangle(int x, int y, int h, int w) {
 
     glBegin(GL_POLYGON);
@@ -374,6 +392,27 @@ void circle(int n, int x, int y, int r) {
     glEnd();
 }
 
+/*plant*/
+void plant(int x, int y, float scale = 1) {
+    glColor3ub(57, 255, 20);
+    rectangle(x, y, scale * 60, scale * 8);
+
+    circle(50, x + 15, y + 60, scale * 10);
+    circle(50, x - 10, y + 55, scale * 10);
+
+    glBegin(GL_POLYGON);
+    glVertex2i(x + 16, y + 70);
+    glVertex2i(x + 35, y + 60);
+    glVertex2i(x + 16, y + 50);
+    glEnd();
+
+    glBegin(GL_POLYGON);
+    glVertex2i(x - 12, y + 65);
+    glVertex2i(x - 30, y + 55);
+    glVertex2i(x - 12, y + 45);
+    glEnd();
+}
+
 void window(int x, int y, int h, int w) {
     glColor3ub(0, 0, 0);
     rectangle(x, y, h, w);
@@ -382,10 +421,13 @@ void window(int x, int y, int h, int w) {
     rectangle(x + 4, y + 4, h - 8, w - 8);
 }
 
-void door(int x, int y, int w) {
+void door(int x, int y, int w, int colour = 0) { // black colour if 1, normal if 0
     int h = w;
     //main
-    glColor3ub(100, 100, 100);
+    if (colour == 0)
+        glColor3ub(100, 100, 100);
+    else if (colour == 1)
+        glColor3f(0, 0, 0);
     rectangle(x, y, h, w);
     //small rectangle
     int innerW = w * 0.8;
@@ -394,20 +436,23 @@ void door(int x, int y, int w) {
     int innerY = y + (h / 16);
 
     //back circle
-    glColor3ub(100, 100, 100);
+    if (colour == 0)
+        glColor3ub(100, 100, 100);
     circle(100, x + w / 2, y + h, 75);
-
-    glColor3ub(50, 50, 50);
+    if (colour == 0)
+        glColor3ub(50, 50, 50);
     rectangle(innerX, innerY, innerH, innerW);
     //front circle
-    glColor3ub(50, 50, 50);
+    if (colour == 0)
+        glColor3ub(50, 50, 50);
     circle(100, x + w / 2, y + h, 60);
-
-    glColor3ub(173, 177, 255);
+    if (colour == 0)
+        glColor3ub(173, 177, 255);
     circle(100, x + w / 2, y + h, 20);
 
     //handle
-    glColor3ub(50, 50, 50);
+    if (colour == 0)
+        glColor3ub(50, 50, 50);
     circle(100, x + w - 5, y + h / 2 + 10, 5);
 }
 
@@ -443,7 +488,7 @@ void pot(int x, int y, int h, int w) {
     //body
     glColor3ub(94, 53, 17);
     rectangle(a, y - 20, 20, w);
-    glColor3ub;(94, 53, 17);
+    glColor3ub(94, 53, 17);
     glBegin(GL_POLYGON);
     glVertex2i(a + 20, y - 70);
     glVertex2i(a + 100, y - 70);
@@ -452,10 +497,7 @@ void pot(int x, int y, int h, int w) {
     glEnd();
 }
 
-void drawScene2() {
-    //glPointSize(10.0);
-    //glLineWidth(4.0);
-
+void drawScene4() {
     glColor3ub(30, 30, 30);
     rectangle(0, 0, 500, SCREEN_WIDTH);
 
@@ -475,12 +517,10 @@ void drawScene2() {
     glColor3ub(105, 40, 10);
     rectangle(SCREEN_WIDTH / 4 - 200, 470, 60, 110);
 
-    door(SCREEN_WIDTH / 2, 500, 150);
-
-    //glEnd();
+    door(SCREEN_WIDTH / 2, 500, 150, 0);
 }
 
-/*Scene 2 end*/
+/*Scene 3 end*/
 
 /*Characters*/
 void drawBot9(float x = 500.0f, float y = 500.0f, float size = 1, int face = 1) {
@@ -497,16 +537,39 @@ void drawBot9(float x = 500.0f, float y = 500.0f, float size = 1, int face = 1) 
     drawRoundedRect(x, y, 12 * scale, 9 * scale, 25.0f);
     glColor3d(0, 0, 0);
     drawRoundedRectOutline(x, y, 12 * scale, 9 * scale, 25.0f);
-    /*face*/
-    glColor3d(0, 0, 0);
-    drawRoundedRect(x, y, width, height, 25.0f);
-    /*eyes*/
-    glColor3d(1, 1, 1);
-    ellipse(x + 3 * scale, y, scale, 7.0f/5.0f * scale, 2 * scale);
-    ellipse(x - 3 * scale, y, scale, 7.0f/5.0f * scale, 2 * scale);
-    /*mouth*/
-    glColor3d(1, 1, 1);
-    semi_ellipse(x, y - 2 * scale, 7.0f / 5.0f * scale, scale, 30, 10.0f);
+    if (face == 1) {//neutral face
+
+        /*face*/
+        glColor3d(0, 0, 0);
+        drawRoundedRect(x, y, width, height, 25.0f);
+        /*eyes*/
+        glColor3d(1, 1, 1);
+        ellipse(x + 3 * scale, y, scale, 7.0f / 5.0f * scale, 2 * scale);
+        ellipse(x - 3 * scale, y, scale, 7.0f / 5.0f * scale, 2 * scale);
+        /*mouth*/
+        glColor3d(1, 1, 1);
+        semi_ellipse(x, y - 2 * scale, 7.0f / 5.0f * scale, scale, 30, 10.0f);
+    }
+    else if (face == 2) {//scanning face
+        glColor3d(0, 0.2, 0.1);
+        drawRoundedRect(x, y, 11 * scale, 8 * scale, scale);
+        glColor3d(0, 0.7, 0);
+        glPushMatrix();
+        glTranslated(0, scanbar, 0);
+        glLineWidth(5.0f);
+        glBegin(GL_LINE_STRIP);
+        glVertex2f(x - 5 * scale, y - 4 * scale);
+        glVertex2f(x + 5 * scale, y - 4 * scale);
+        glEnd();
+        glPopMatrix();
+    }
+    else if (face == 3) {
+        glColor3d(0, 0.2, 0.1);
+        drawRoundedRect(x, y, 11 * scale, 8 * scale, scale);
+        plant(x, y);
+        plant(x, y - 50);
+        plant(x, y - 100);
+    }
     /*body*/
     glColor3d(1, 1, 1);
     drawRoundedRect(x, y - 13 * scale, 15 * scale, 15 * scale, unit / 2.5f);
@@ -517,25 +580,25 @@ void drawBot9(float x = 500.0f, float y = 500.0f, float size = 1, int face = 1) 
     /*wheels*/
     //stage right wheel
     glColor3d(0, 0, 0);
-    drawRoundedRect(x + 8 * scale, y - 15 * scale, 3 * scale, 15 * scale, unit / 2.5f);
+    drawRoundedRect(x + 8 * scale, y - 15 * scale, 3 * scale, 5 * scale, unit / 2.5f);
     glColor3d(120, 150, 180);
         int i = 0;
         while (i < 15 * scale) {
             glBegin(GL_LINE_STRIP);
-            glVertex2d(x + 9.5 * scale, y - 8 * scale - i);
-            glVertex2d(x + 6.5 * scale, y - 8 * scale - i);
+            glVertex2d(x + 9.5 * scale, y - 10 * scale - i);
+            glVertex2d(x + 6.5 * scale, y - 10 * scale - i);
             i += scale;
             glEnd();
         }
     //stage left wheel
     glColor3d(0, 0, 0);
-    drawRoundedRect(x - 8 * scale, y - 15 * scale, 3 * scale, 15 * scale, unit / 2.5f);
+    drawRoundedRect(x - 8 * scale, y - 15 * scale, 3 * scale, 5 * scale, unit / 2.5f);
     glColor3d(200, 150, 180);
     i = 0;
-    while (i < 15 * scale) {
+    while (i < 5 * scale) {
         glBegin(GL_LINE_STRIP);
-        glVertex2d(x - 9.5 * scale, y - 8 * scale - i);
-        glVertex2d(x - 6.5 * scale, y - 8 * scale - i);
+        glVertex2d(x - 9.5 * scale, y - 10 * scale - i);
+        glVertex2d(x - 6.5 * scale, y - 10 * scale - i);
         i += scale;
         glEnd();
     }
@@ -544,10 +607,6 @@ void drawBot9(float x = 500.0f, float y = 500.0f, float size = 1, int face = 1) 
 void drawBot9SideView(float x = 400.0f, float y = 500.0f, float size = 0.5, int face = 1) {
     float unit = 25;
     float scale = size * unit;
-    /*neck*/
-    glColor3d(0.3f, 0.3f, 0.3f);
-    drawRoundedRect(x - 4.5 * scale, y - scale * 5, 5.5 * scale, 8 * scale, scale / 2.5f);
-    
     
     /*wheel behind body*/
     glColor3d(0.2f, 0.2f, 0.2f);
@@ -572,6 +631,12 @@ void drawBot9SideView(float x = 400.0f, float y = 500.0f, float size = 0.5, int 
     drawRoundedRect(x - 8 * scale, y - 10 * scale, 15 * scale, 12 * scale, scale / 2.5f);
     glColor3d(0, 0, 0);
     drawRoundedRectOutline(x - 8 * scale, y - 10 * scale, 15 * scale, 12 * scale, scale / 2.5f);
+
+    /*neck*/
+    glColor3d(0, 0, 0);
+    drawRoundedRect(x - 4.5 * scale, y - scale * 5, 6 * scale, 8.5 * scale, scale / 2.5f);
+    glColor3d(0.3f, 0.3f, 0.3f);
+    drawRoundedRect(x - 4.5 * scale, y - scale * 5, 5.5 * scale, 8 * scale, scale / 2.5f);
 
     /*body*/
     glColor3d(1, 1, 1);
@@ -624,6 +689,11 @@ void drawBot9SideView(float x = 400.0f, float y = 500.0f, float size = 0.5, int 
             glVertex2f(x + 5 * scale, y - 4 * scale);
         glEnd();
         glPopMatrix();
+    }
+    else if (face == 3) {//Plant display on face
+        glColor3d(0, 0.2, 0.1);
+        drawRoundedRect(x, y, 11 * scale, 8 * scale, scale);
+        plant(x, y);
     }
         glPopMatrix();
     /*body*/
@@ -747,6 +817,32 @@ void drawSeed(float x, float y, float scale) {
     glPopMatrix();
 }
 
+/*claw as a separate object*/
+void drawClaw(float x, float y) {
+    glPushMatrix();
+    glTranslated(x, y, 0);
+    glRotated(30, 0, 0, 1);
+    glTranslated(-x, -y, 0);
+    glColor3d(1, 1, 1);
+    drawRoundedRect(x - 300, y, 450, 50, 5);
+    glColor3d(0, 0, 0);
+    drawRoundedRectOutline(x - 300, y, 450, 50, 5);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslated(x, y, 0);
+    glRotated(-60, 0, 0, 1);
+    glTranslated(-x, -y, 0);
+    glColor3d(0.0f, 0.0f, 0.0f);
+    semi_ellipse(x, y, 70, 70, 50, 50);
+    glColor3d(0.9f, 0.9f, 0.9f);
+    semi_ellipse(x, y, 70, 70, 50, 10);
+    glColor3d(0.0f, 0.0f, 0.0f);
+    //semi_ellipse(x, y, 100, 100, 50,100);
+    glPopMatrix();
+
+}
+
 void display() {
 	glClear(GL_COLOR_BUFFER_BIT);
 	//drawn items here
@@ -759,7 +855,7 @@ void display() {
             glPushMatrix();
             glTranslatef(400, 300, 0);
             glTranslatef(-400, -300, 0);
-            glTranslatef(bot9_x, 0, 0);
+            glTranslatef(bot9_x, bot9_y, 0);
             drawBot9SideView(300, 600, 0.7, bot9_face);
             glPopMatrix();
             glPushMatrix();
@@ -776,7 +872,7 @@ void display() {
             glPushMatrix();
             glTranslatef(400, 300, 0);
             glTranslatef(-400, -300, 0);
-            glTranslatef(bot9_x, 0, 0);
+            glTranslatef(bot9_x, bot9_y, 0);
             drawBot9SideView(300, 600, 0.7, bot9_face);
             glPopMatrix();
         }
@@ -786,17 +882,34 @@ void display() {
         glPushMatrix();
         glTranslatef(400, 300, 0);
         glTranslatef(-400, -300, 0);
-            glTranslatef(bot9_x, 0, 0);
+            glTranslatef(bot9_x, bot9_y, 0);
             drawBot9SideView(400, 500, 0.3, 1);
         glPopMatrix();
         drawSeed(600, 300, 0.25f);
     }
     else if (scene == 2) {
         drawScene2();
-        drawBot9(500,500,1,2);
-        
+        drawBot9(SCREEN_WIDTH / 2, 500, 2, bot9_face);
+        drawClaw(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 3);
+        drawSeed(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 3, 1.0);
     }
-      
+    else if (scene == 3) {
+        drawScene1();
+        glPushMatrix();
+        glTranslatef(400, 300, 0);
+        glTranslatef(-400, -300, 0);
+        glTranslatef(bot9_x, bot9_y, 0);
+        drawBot9SideView(400, 500, 0.3, bot9_face);
+        glPopMatrix();
+        drawSeed(600 + seed_x, 300 + seed_y, 0.25f);
+    }
+    else if (scene == 4) {
+        drawScene4();
+        if (door_state == 1){
+            glColor3d(0, 0, 0);
+            door(SCREEN_WIDTH / 2, 500, 150, 1);
+        }
+    }
     glutSwapBuffers();
 	glFlush();
 }
@@ -868,7 +981,7 @@ void anim(int value) {
             }
             if (arm_angle >= 10 && trash_y >= 450 && arm_extension == 1.0f) {
                 flag = false;
-                std::cout << flag;
+                //std::cout << flag;
             }
         }
         else if (arm_extension > 0.0f) {
@@ -898,9 +1011,11 @@ void anim(int value) {
     }
 
     if (animation_state == 2) {
-        std::cout << scene0_leftpan;
-        if (scene0_leftpan >= -600)
+        //std::cout << scene0_leftpan;
+        if (scene0_leftpan >= -600) {
+            rock_behind_bot = false;
             draw_rock = true;
+        }
         if (cur_leftpan >= -400 && scene0_leftpan > -1200) {
             if (trash_x > 0) {
                 trash_x -= 40;
@@ -935,11 +1050,12 @@ void anim(int value) {
             bot9_x = 0;
             animation_state = 3;
             arm_angle = -90;
+            scene = 1;
         }
     }
 
     if (animation_state == 3) {
-        if (bot9_x < 100) {
+        if (bot9_x < 100) {//used to be 100
             if (wheel_rotation > -360)
                 wheel_rotation -= 10;
             else
@@ -947,9 +1063,9 @@ void anim(int value) {
             bot9_x += 1.0f;
         }
         else
-            animation_state = 3;
+            animation_state = 4;
     }
-    else if (animation_state == 3) {
+    else if (animation_state == 4) {
         if (head_angle > -30 && !head_flip) {
             head_angle--;
             arm_angle = -90;
@@ -966,11 +1082,11 @@ void anim(int value) {
                 if (pause < 25)
                     pause++;
                 else
-                    animation_state = 4;
+                    animation_state = 5;
             }
         }
     }
-    else if (animation_state == 4) {
+    else if (animation_state == 5) {
         if (seed_x > -90) {
             pause = 0;
             if (arm_extension > 1.0)
@@ -980,22 +1096,95 @@ void anim(int value) {
             if (seed_y < 60)
                 seed_y += 60.0f / (90.0f / 4.0f);
         }
-        if (arm_angle < -60) {
-            if (pause < 100)
-                pause++;
-            else {
-                arm_angle += 0.5;
-                seed_y += 1;
-            }
-        }
-        if (arm_angle == -60 && arm_extension <= 1.0f) {
+        else if (arm_angle < -60) {
             if (pause < 50)
                 pause++;
             else {
-                pause = 0;
-                scene = 1;
+                arm_angle += 2;
+                seed_y += 4;
             }
         }
+        else{
+            if (pause < 100)
+                pause++;
+            else {
+                pause = 0;
+                seed_x = 0;
+                seed_y = 0;
+                scene = 2;
+                animation_state = 6;
+            }
+        }
+    }
+    else if (animation_state == 6) {
+        if (pause < 30)
+            pause++;
+        else if (pause < 200) {
+            bot9_face = 2;
+            if (scanbar < 400 && !bar_flip) {
+                scanbar += 10;
+            }
+            else if (scanbar >= 400 && !bar_flip) {
+                bar_flip = true;
+            }
+            else if (scanbar > 0 && bar_flip) {
+                scanbar -= 10;
+            }
+            else {
+                bar_flip = false;
+            }
+            pause++;
+        }
+        else if (pause < 300){
+            bot9_face = 3;
+            pause++;
+        }
+        else if (pause < 340) {
+            bot9_face = 1;
+            pause++;
+        }
+        else {
+            seed_x = -45;
+            seed_y = 90;
+            scene = 3;
+            animation_state = 7;
+            pause = 0;
+        }
+    }
+    else if (animation_state == 7) {
+        if (pause < 50) {
+            pause++;
+        }
+        else if (head_angle < 0) {
+            head_angle++;
+        }
+        else if (bot9_y >= -600){
+            bot9_y -= 4;
+            seed_y -= 2;
+        }
+        else {
+            bot9_y = 0;
+            bot9_x = 0;
+            seed_y = 0;
+            seed_x = 0;
+            pause = 0;
+            animation_state = 8;
+            scene = 4;
+        }
+    }
+    else if (animation_state == 8) {
+        if (pause < 100) {
+            door_state = 0;
+            pause++;
+        }
+        else if (pause < 200) {
+            door_state = 1;
+            pause++;
+        }
+        else {
+            pause = 0;
+        }
+
     }
    	glutTimerFunc(16, anim, 0); // Call again in 16ms (~60 FPS)
 }

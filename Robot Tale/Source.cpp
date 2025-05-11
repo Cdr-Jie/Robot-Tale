@@ -15,9 +15,11 @@
 float bot9_x = 0;
 float bot9_y = 0;
 float bot9_angle = 0;
+float bot9_scale = 0.5;
 float arm_angle = 0; //0 is facing bottom, all rotates counter clockwise
 float head_angle = 0; // 0 is facing right
 int bot9_face = 1;
+int bot9_direction = 1;
 float scene0_leftpan = 0;
 float cur_leftpan = 0;
 
@@ -31,6 +33,11 @@ float seed_x = 0;
 float seed_y = 0;
 float trash_x = 0;
 float trash_y = 0;
+float can_x = 0;
+float can_y = 0;
+float can_scale = 1;
+float can_direction = 1;
+float can_angle = 0;
 
 bool bar_flip = false;//for scanbar
 bool head_flip = false; // for head nod
@@ -220,7 +227,7 @@ void drawScene0() {
     glLineWidth(10.0f);
 
     //wall panel
-    glColor3f(0.95f, 0.95f, 0.85f);
+    glColor3f(0.3f, 0.3f, 0.3f);
     glBegin(GL_QUADS);
     glVertex2f(0.0f, 300.0f); // Bottom-left corner
     glVertex2f(2 * SCREEN_WIDTH, 300.0f); // Bottom-right corner
@@ -249,7 +256,7 @@ void drawScene0() {
     glTranslatef(SCREEN_WIDTH + 600, 400, 0);
     glRotated(-20, 0, 0, 1);
     glTranslatef(-SCREEN_WIDTH - 600, -400, 0);
-    glColor3f(0.95f, 0.95f, 0.85f);
+    glColor3f(0.3f, 0.3f, 0.3f);
     glBegin(GL_QUADS);
         glVertex2f(SCREEN_WIDTH + 600, 300.0f); // Bottom-left corner
         glVertex2f(2 * SCREEN_WIDTH, 300.0f); // Bottom-right corner
@@ -548,7 +555,7 @@ void drawBot9(float x = 500.0f, float y = 500.0f, float size = 1, int face = 1) 
         ellipse(x - 3 * scale, y, scale, 7.0f / 5.0f * scale, 2 * scale);
         /*mouth*/
         glColor3d(1, 1, 1);
-        semi_ellipse(x, y - 2 * scale, 7.0f / 5.0f * scale, scale, 30, 10.0f);
+        semi_ellipse(x, y - 2 * scale, 7.0f / 5.0f * scale, scale, 30, scale / 2.5);
     }
     else if (face == 2) {//scanning face
         glColor3d(0, 0.2, 0.1);
@@ -580,25 +587,26 @@ void drawBot9(float x = 500.0f, float y = 500.0f, float size = 1, int face = 1) 
     /*wheels*/
     //stage right wheel
     glColor3d(0, 0, 0);
-    drawRoundedRect(x + 8 * scale, y - 15 * scale, 3 * scale, 5 * scale, unit / 2.5f);
+    drawRoundedRect(x + 8 * scale, y - 20 * scale, 3 * scale, 5 * scale, unit / 2.5f);
     glColor3d(120, 150, 180);
+    glLineWidth(scale / 10);
         int i = 0;
-        while (i < 15 * scale) {
+        while (i < 3 * scale) {
             glBegin(GL_LINE_STRIP);
-            glVertex2d(x + 9.5 * scale, y - 10 * scale - i);
-            glVertex2d(x + 6.5 * scale, y - 10 * scale - i);
+            glVertex2d(x + 9.5 * scale, y - 18 * scale - i);
+            glVertex2d(x + 6.5 * scale, y - 18 * scale - i);
             i += scale;
             glEnd();
         }
     //stage left wheel
     glColor3d(0, 0, 0);
-    drawRoundedRect(x - 8 * scale, y - 15 * scale, 3 * scale, 5 * scale, unit / 2.5f);
+    drawRoundedRect(x - 8 * scale, y - 20 * scale, 3 * scale, 5 * scale, unit / 2.5f);
     glColor3d(200, 150, 180);
     i = 0;
-    while (i < 5 * scale) {
+    while (i < 3 * scale) {
         glBegin(GL_LINE_STRIP);
-        glVertex2d(x - 9.5 * scale, y - 10 * scale - i);
-        glVertex2d(x - 6.5 * scale, y - 10 * scale - i);
+        glVertex2d(x - 9.5 * scale, y - 18 * scale - i);
+        glVertex2d(x - 6.5 * scale, y - 18 * scale - i);
         i += scale;
         glEnd();
     }
@@ -843,6 +851,24 @@ void drawClaw(float x, float y) {
 
 }
 
+/* Watering can */
+void drawWateringCan(float x = 325, float y = 525) {
+    glColor3d(0.6, 0.6, 0.6);
+    trapezium(x, y, 50, 50);
+    glPushMatrix();
+    glTranslated(x, y, 0);
+    glRotated(90, 0, 0, 1);
+    glTranslated(-x, -y, 0);
+    semi_ellipse(x + 20, y - 40, 10, 30, 40, 5.0);
+    glPopMatrix();
+    glPushMatrix();
+    glTranslated(x, y, 0);
+    glRotated(-40, 0, 0, 1);
+    glTranslated(-x, -y, 0);
+    drawRoundedRect(x - 25, y + 15, 40, 10, 1);
+    glPopMatrix();
+}
+
 void display() {
 	glClear(GL_COLOR_BUFFER_BIT);
 	//drawn items here
@@ -905,10 +931,48 @@ void display() {
     }
     else if (scene == 4) {
         drawScene4();
+        
         if (door_state == 1){
             glColor3d(0, 0, 0);
             door(SCREEN_WIDTH / 2, 500, 150, 1);
         }
+        if (flag == true && animation_state == 8) {
+            glPushMatrix();
+            glTranslated(700, 600, 0);
+            glScaled(bot9_scale, bot9_scale, 0);
+            glTranslated(-700, -600, 0);
+            drawBot9(725, 650, 0.5, 1);
+            glPopMatrix();
+        }
+        else if (flag == true) {
+            glPushMatrix();
+            glTranslated(700, 600, 0);
+            glScaled(bot9_scale, bot9_scale, 0);
+            glTranslated(-700, -600, 0);
+            glTranslated(bot9_x, 0, 0);
+            glTranslated(700, 600, 0);
+            glScaled(bot9_direction, 1, 1);
+            glTranslated(-700, -600, 0);
+            drawBot9SideView(750, 650, 0.5, 1);
+            glPopMatrix();
+            glPushMatrix();
+            glTranslated(seed_x, seed_y, 0);
+            drawSeed(625, 525, 0.3);
+            glPopMatrix();
+        }
+        glPushMatrix();
+        glTranslated(325, 525, 0);
+        glScaled(can_scale, can_scale, 1);
+        glTranslated(-325, -525, 0);
+        glTranslated(can_x, can_y, 0);
+        glTranslated(425, 525, 0);
+        glScaled(can_direction, 1, 1);
+        glTranslated(-425, -525, 0);
+        glTranslated(325, 525, 0);
+        glRotated(can_angle, 0, 0, 1);
+        glTranslated(-325, -525, 0);
+        drawWateringCan();
+        glPopMatrix();
     }
     glutSwapBuffers();
 	glFlush();
@@ -981,7 +1045,6 @@ void anim(int value) {
             }
             if (arm_angle >= 10 && trash_y >= 450 && arm_extension == 1.0f) {
                 flag = false;
-                //std::cout << flag;
             }
         }
         else if (arm_extension > 0.0f) {
@@ -1011,7 +1074,6 @@ void anim(int value) {
     }
 
     if (animation_state == 2) {
-        //std::cout << scene0_leftpan;
         if (scene0_leftpan >= -600) {
             rock_behind_bot = false;
             draw_rock = true;
@@ -1034,7 +1096,7 @@ void anim(int value) {
                 flag = true;
                 cur_leftpan = 0;
             }
-            else{
+            else {
                 pause = 0;
                 arm_angle = -90;
                 flag = true;
@@ -1065,14 +1127,14 @@ void anim(int value) {
         else
             animation_state = 4;
     }
-    else if (animation_state == 4) {
+    else if (animation_state == 4) {//bot9 tilts head to look at the seed
         if (head_angle > -30 && !head_flip) {
             head_angle--;
             arm_angle = -90;
         }
         else if (head_angle == -30) {
             draw_hands = true;
-            if (arm_angle > -123 ) {
+            if (arm_angle > -123) {
                 arm_angle -= 2;
             }
             if (arm_extension < 2.2f) {
@@ -1086,7 +1148,7 @@ void anim(int value) {
             }
         }
     }
-    else if (animation_state == 5) {
+    else if (animation_state == 5) {//bot9 picks up the seed
         if (seed_x > -90) {
             pause = 0;
             if (arm_extension > 1.0)
@@ -1104,7 +1166,7 @@ void anim(int value) {
                 seed_y += 4;
             }
         }
-        else{
+        else {
             if (pause < 100)
                 pause++;
             else {
@@ -1116,7 +1178,7 @@ void anim(int value) {
             }
         }
     }
-    else if (animation_state == 6) {
+    else if (animation_state == 6) {//bot9 scans the seed
         if (pause < 30)
             pause++;
         else if (pause < 200) {
@@ -1135,7 +1197,7 @@ void anim(int value) {
             }
             pause++;
         }
-        else if (pause < 300){
+        else if (pause < 300) {
             bot9_face = 3;
             pause++;
         }
@@ -1151,18 +1213,23 @@ void anim(int value) {
             pause = 0;
         }
     }
-    else if (animation_state == 7) {
+    else if (animation_state == 7) {//after scanning, bot9 holds the seed in hand and moves to the next scene
         if (pause < 50) {
             pause++;
         }
         else if (head_angle < 0) {
             head_angle++;
         }
-        else if (bot9_y >= -600){
+        else if (bot9_y >= -600) {
+            if (wheel_rotation > -360)
+                wheel_rotation -= 10;
+            else
+                wheel_rotation = 0;
             bot9_y -= 4;
             seed_y -= 2;
         }
         else {
+            flag = false;
             bot9_y = 0;
             bot9_x = 0;
             seed_y = 0;
@@ -1173,19 +1240,132 @@ void anim(int value) {
         }
     }
     else if (animation_state == 8) {
-        if (pause < 100) {
+        if (pause < 50) {//door initially closed
             door_state = 0;
             pause++;
         }
-        else if (pause < 200) {
+        else if (pause < 75) {//door opens up
             door_state = 1;
             pause++;
         }
+        else if (pause < 100) {//bot9 walks in
+            flag = true;
+            pause++;
+        }
+        else if (bot9_scale < 1) {
+            bot9_scale += 0.01;
+            door_state = 0;
+        }
         else {
+            if (pause < 120) {
+                pause++;
+            }
+            else {
+                animation_state = 9;
+                pause = 0;
+                draw_hands = true;
+                arm_angle = -90;
+                arm_extension = 0;
+            }
+        }
+    }
+    else if (animation_state == 9) {//seed in hand, reaches out towards the pot
+        if (arm_extension < 2) {
+            arm_extension += 0.05;
+            seed_x += 4;
+        }
+        if (bot9_x < 50) {
+            if (wheel_rotation > -360)
+                wheel_rotation -= 10;
+            else
+                wheel_rotation = 0;
+            bot9_x++;
+            seed_x += 0.5;
+        }
+        if (arm_extension >= 2 && bot9_x >= 50) {
+            animation_state = 10;
+        }
+    }
+    else if (animation_state == 10) {//drops and plants the seed into a pot
+        if (arm_extension > 0) {
+            arm_extension -= 0.05;
+        }
+        if (seed_y >= -50) {
+            seed_y -= 2;
+        }
+        if (seed_y <= -50 && arm_extension <= 0) {
+            animation_state = 11;
+        }
+    }
+    else if (animation_state == 11) {
+        bot9_direction = -1;
+        if (arm_angle < -88) {
+            arm_angle++;
+        }
+        if (arm_extension < 2.8) {
+            arm_extension += 0.1;
+        }
+        if (arm_angle >= -88 && arm_extension >= 2.8)
+            animation_state = 12;
+    }
+    else if (animation_state == 12) {
+        if (arm_extension > 1.0) {
+            arm_extension -= 0.1;
+            can_scale += 0.05;
+            can_x += 6;
+            can_y -= 1;
+        }
+        else {
+            can_direction = -1;
+            bot9_direction = 1;
+            animation_state = 13;
             pause = 0;
         }
-
     }
+    if (animation_state == 13) {
+        if (arm_angle > -110) {
+            arm_angle--;
+            can_angle++;
+            can_y -= 2.5;
+        }
+        else {
+            if (pause < 50)
+                pause++;
+            else
+                animation_state = 14;
+        }
+    }
+    else if (animation_state == 14) {
+        if (arm_angle < -90) {
+            arm_angle++;
+            can_angle--;
+            can_y += 2.5;
+        }
+        else {
+            animation_state = 15;
+            can_direction = 1;
+            bot9_direction = -1;
+        }
+    }
+    else if (animation_state == 15) {
+        if (arm_extension < 2.8) {
+            arm_extension += 0.1;
+            can_scale -= 0.05;
+            can_x -= 6;
+            can_y += 1;
+        }
+        else {
+            
+            animation_state = 16;
+        }
+    }
+    else if (animation_state == 16) {
+        if (arm_extension > 0.0)
+            arm_extension -= 0.1;
+        else
+            animation_state = 17;
+    }
+    
    	glutTimerFunc(16, anim, 0); // Call again in 16ms (~60 FPS)
 }
 
@@ -1264,7 +1444,7 @@ int main(int argc, char** argv) {
     glutInit(&argc, argv);
     glutInitWindowSize(SCREEN_WIDTH, SCREEN_HEIGHT);
     glutInitDisplayMode(GLUT_DOUBLE);
-    glutCreateWindow("Test");
+    glutCreateWindow("Robot Tale");
    
     glutDisplayFunc(display);
    
